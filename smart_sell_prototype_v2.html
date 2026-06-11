@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Sell — Listing Price Prototype v2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f2f2f7; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; }
+  h1 { font-size: 15px; font-weight: 600; color: #555; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #999; margin-bottom: 20px; }
+  .case-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; padding: 0 0 10px; max-width: 360px; }
+  .pill { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 0.5px solid #ccc; color: #666; cursor: pointer; background: #fff; }
+  .pill.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .info-box { background: #fff; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; color: #666; line-height: 1.5; max-width: 340px; width: 100%; border: 0.5px solid #e0e0e0; }
+
+  /* ── phone shell ── */
+  .phone { width: 340px; background: #fff; border-radius: 40px; border: 8px solid #1a1a1a; overflow: hidden; box-shadow: 0 0 0 1px #333, 0 20px 60px rgba(0,0,0,0.15); position: relative; height: 620px; }
+
+  /* ── background listing page (always present, behind sheet) ── */
+  .bg-page { position: absolute; inset: 0; display: flex; flex-direction: column; background: #f5f5f5; border-radius: 32px; z-index: 0; }
+  .bg-status { background: #f5f5f5; padding: 10px 18px 4px; display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: #000; }
+  .bg-nav { background: #f5f5f5; padding: 6px 16px 8px; display: flex; justify-content: space-between; align-items: center; }
+  .bg-nav-title { font-size: 15px; font-weight: 700; color: #000; }
+  .bg-nav-btn { font-size: 13px; color: #555; }
+  .bg-photo { height: 155px; background: linear-gradient(160deg,#c8c8c8,#a8a8a8); position: relative; display: flex; align-items: center; justify-content: center; }
+  .bg-photo-label { font-size: 11px; color: rgba(255,255,255,0.6); }
+  .bg-photo-edit { position: absolute; bottom: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .bg-photo-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
+  .bg-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.4); }
+  .bg-dot.on { background: #fff; }
+  .bg-fields { padding: 10px 14px 6px; background: #fff; }
+  .bg-field-placeholder { font-size: 14px; color: #bbb; margin-bottom: 4px; }
+  .bg-field-sub { font-size: 12px; color: #ccc; margin-bottom: 10px; }
+  .bg-edit-label { font-size: 14px; font-weight: 700; color: #000; padding: 8px 14px 6px; background: #fff; border-top: 0.5px solid #eee; }
+  .bg-chips { display: flex; gap: 7px; padding: 4px 14px 10px; background: #fff; overflow-x: auto; }
+  .bg-chip { flex-shrink: 0; border: 1.5px dashed #5b8dee; border-radius: 10px; padding: 8px 12px; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; background: #fff; min-width: 58px; transition: background 0.15s; }
+  .bg-chip:hover { background: #f0f6ff; }
+  .bg-chip.price-chip { border-color: #5b8dee; }
+  .bg-chip-plus { font-size: 14px; color: #5b8dee; }
+  .bg-chip-label { font-size: 10px; color: #222; }
+  .bg-chip-req { color: #ff3b30; font-size: 9px; }
+  .bg-regen { margin: 6px 14px 0; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 11px; border: 1.5px solid #c084fc; border-radius: 22px; font-size: 13px; font-weight: 600; color: #7c3aed; cursor: pointer; background: #fff; }
+
+  /* ── overlay dim when sheet is open ── */
+  .bg-dim { position: absolute; inset: 0; background: rgba(0,0,0,0.25); z-index: 1; border-radius: 32px; pointer-events: none; opacity: 0; transition: opacity 0.35s; }
+  .bg-dim.visible { opacity: 1; pointer-events: auto; }
+
+  /* ── sheet + keyboard sliding layer ── */
+  .sliding-layer { position: absolute; bottom: 0; left: 0; right: 0; z-index: 2; transform: translateY(0); transition: transform 0.38s cubic-bezier(0.32,0,0.67,1); }
+  .sliding-layer.collapsed { transform: translateY(105%); }
+
+  .sheet { background: #fff; border-radius: 16px 16px 0 0; padding: 16px; border-top: 0.5px solid #e0e0e0; }
+  .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .sheet-title { font-size: 17px; font-weight: 600; color: #000; }
+  .close-btn { width: 28px; height: 28px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #666; cursor: pointer; border: none; }
+  .field-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 4px; }
+  .field-row.error { border-color: #ff3b30; }
+  .field-input { font-size: 15px; color: #000; background: transparent; border: none; outline: none; width: 120px; }
+  .field-input::placeholder { color: #bbb; }
+  .field-earnings { font-size: 13px; color: #888; white-space: nowrap; }
+  .error-text { font-size: 12px; color: #ff3b30; margin: 3px 0 4px 2px; min-height: 15px; line-height: 1.4; }
+  .toggle-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 4px; }
+  .toggle-label { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 600; color: #000; }
+  .toggle-sub { font-size: 12px; color: #888; margin-top: 2px; }
+  .toggle-switch { width: 48px; height: 28px; border-radius: 14px; background: #34c759; position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
+  .toggle-switch.off { background: #e0e0e0; }
+  .toggle-knob { width: 24px; height: 24px; border-radius: 50%; background: #fff; position: absolute; top: 2px; left: 22px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .toggle-switch.off .toggle-knob { left: 2px; }
+  .min-section { margin-top: 6px; }
+  .min-label-row { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+  .min-label-text { font-size: 12px; font-weight: 600; color: #000; }
+  .rec-row { display: flex; justify-content: space-between; padding: 6px 0; border-top: 0.5px solid #f0f0f0; margin-top: 6px; }
+  .rec-label { font-size: 12px; color: #888; }
+  .rec-value { font-size: 12px; color: #888; }
+  .done-btn { display: block; width: 100%; padding: 13px; background: #000; color: #fff; font-size: 15px; font-weight: 600; border: none; border-radius: 12px; margin-top: 10px; cursor: pointer; }
+  .done-btn:disabled { background: #e0e0e0; color: #aaa; cursor: not-allowed; }
+  .keyboard { background: #d1d5db; padding: 6px 4px 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .key { background: #fff; border-radius: 8px; padding: 9px 4px; text-align: center; font-size: 17px; font-weight: 400; cursor: pointer; box-shadow: 0 1px 0 #aaa; user-select: none; color: #000; }
+  .key.dark { background: #adb5bd; font-size: 13px; }
+  .key:active { opacity: 0.7; }
+
+  /* ── saved banner that appears on bg page ── */
+  .saved-banner { position: absolute; bottom: 0; left: 0; right: 0; background: #f0fdf4; border-top: 0.5px solid #bbf7d0; padding: 9px 16px; display: flex; justify-content: space-between; align-items: center; z-index: 3; transform: translateY(100%); transition: transform 0.3s 0.2s; border-radius: 0 0 32px 32px; }
+  .saved-banner.visible { transform: translateY(0); }
+  .saved-text { font-size: 12px; color: #16a34a; font-weight: 500; }
+  .reopen-btn { font-size: 12px; color: #007aff; font-weight: 500; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h1>Smart Sell — Listing Price Prototype</h1>
+<p class="subtitle">Auto-fill min price UX · v2 spec</p>
+
+<div class="case-pills">
+  <div class="pill active"  onclick="setCase('new_listing', this)">New listing</div>
+  <div class="pill"         onclick="setCase('edit_lp_only', this)">Edit LP (min saved)</div>
+  <div class="pill"         onclick="setCase('min_touched', this)">Min touched</div>
+  <div class="pill"         onclick="setCase('min_cleared', this)">Min cleared</div>
+  <div class="pill"         onclick="setCase('lp_too_low', this)">LP too low</div>
+  <div class="pill"         onclick="setCase('min_too_high', this)">Min ≥ LP</div>
+  <div class="pill"         onclick="setCase('ss_toggle_on', this)">SS off → turn ON</div>
+</div>
+
+<div class="info-box" id="info-box">New listing: both fields are empty. Type a listing price — min auto-fills at 60% once LP is valid.</div>
+
+<div class="phone">
+
+  <!-- background listing page -->
+  <div class="bg-page" id="bg-page">
+    <div class="bg-status"><span>9:41</span><span>▲ ▼ ●●●</span></div>
+    <div class="bg-nav">
+      <span class="bg-nav-btn">Cancel</span>
+      <span class="bg-nav-title">Listing Preview</span>
+      <span class="bg-nav-btn">Next</span>
+    </div>
+    <div class="bg-photo">
+      <span class="bg-photo-label">Photo</span>
+      <div class="bg-photo-dots">
+        <div class="bg-dot on"></div><div class="bg-dot"></div>
+      </div>
+      <div class="bg-photo-edit">✏️</div>
+    </div>
+    <div class="bg-fields">
+      <div class="bg-field-placeholder">Add Title (required)</div>
+      <div class="bg-field-sub">Required</div>
+    </div>
+    <div class="bg-edit-label">Edit Your Listing</div>
+    <div class="bg-chips">
+      <div class="bg-chip"><span class="bg-chip-plus">⊕</span><span class="bg-chip-label">Subcategory</span></div>
+      <div class="bg-chip"><span class="bg-chip-plus">⊕</span><span class="bg-chip-label">Brand</span></div>
+      <div class="bg-chip price-chip" onclick="openSheet()"><span class="bg-chip-plus" style="color:#5b8dee">⊕</span><span class="bg-chip-label">Price <span class="bg-chip-req">*</span></span></div>
+      <div class="bg-chip"><span class="bg-chip-plus">⊕</span><span class="bg-chip-label">Size <span class="bg-chip-req">*</span></span></div>
+    </div>
+    <div class="bg-regen">✦ Regenerate Listing</div>
+  </div>
+
+  <!-- dim overlay -->
+  <div class="bg-dim" id="bg-dim"></div>
+
+  <!-- sliding sheet + keyboard -->
+  <div class="sliding-layer" id="sliding-layer">
+    <div class="sheet">
+      <div class="sheet-header">
+        <span class="sheet-title">Listing Price</span>
+        <button class="close-btn" onclick="closeSheet()">✕</button>
+      </div>
+
+      <div class="field-row" id="lp-field">
+        <input class="field-input" id="lp-input" type="text" inputmode="numeric" placeholder=""
+          oninput="onLPInput(this.value)" onfocus="state.activeField='lp'" />
+        <span class="field-earnings" id="lp-earnings">Earnings: $--</span>
+      </div>
+      <div class="error-text" id="lp-error"></div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label"><span>✦</span> Smart Sell <span style="font-size:12px;color:#aaa">ⓘ</span></div>
+          <div class="toggle-sub">Automate offers for faster selling</div>
+        </div>
+        <div class="toggle-switch" id="toggle" onclick="onToggle()"><div class="toggle-knob"></div></div>
+      </div>
+
+      <div class="min-section" id="min-section">
+        <div class="min-label-row"><span class="min-label-text">Minimum Price</span></div>
+        <div class="field-row" id="min-field">
+          <input class="field-input" id="min-input" type="text" inputmode="numeric" placeholder=""
+            oninput="onMinInput(this.value)" onfocus="onMinFocus()" />
+          <span class="field-earnings" id="min-earnings">Earnings: $--</span>
+        </div>
+        <div class="error-text" id="min-error"></div>
+      </div>
+
+      <div class="rec-row">
+        <span class="rec-label">Recommended Price</span>
+        <span class="rec-value">$40–$75</span>
+      </div>
+      <button class="done-btn" id="done-btn" onclick="onDone()">Done</button>
+    </div>
+
+    <div class="keyboard">
+      <div class="key" onclick="pressKey('1')">1</div>
+      <div class="key" onclick="pressKey('2')">2<br><span style="font-size:9px;color:#888">ABC</span></div>
+      <div class="key" onclick="pressKey('3')">3<br><span style="font-size:9px;color:#888">DEF</span></div>
+      <div class="key" onclick="pressKey('4')">4<br><span style="font-size:9px;color:#888">GHI</span></div>
+      <div class="key" onclick="pressKey('5')">5<br><span style="font-size:9px;color:#888">JKL</span></div>
+      <div class="key" onclick="pressKey('6')">6<br><span style="font-size:9px;color:#888">MNO</span></div>
+      <div class="key" onclick="pressKey('7')">7<br><span style="font-size:9px;color:#888">PQRS</span></div>
+      <div class="key" onclick="pressKey('8')">8<br><span style="font-size:9px;color:#888">TUV</span></div>
+      <div class="key" onclick="pressKey('9')">9<br><span style="font-size:9px;color:#888">WXYZ</span></div>
+      <div class="key dark">+*#</div>
+      <div class="key" onclick="pressKey('0')">0</div>
+      <div class="key dark" onclick="pressKey('del')">⌫</div>
+    </div>
+  </div>
+
+  <!-- saved banner -->
+  <div class="saved-banner" id="saved-banner">
+    <span class="saved-text" id="saved-text">Price saved</span>
+    <span class="reopen-btn" onclick="openSheet()">Edit Price</span>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+const FEE = 0.80, RATIO = 0.60, MIN_FLOOR = 3;
+
+let state = {
+  lpRaw:'', minRaw:'', ssOn:true, activeField:'lp',
+  minTouched:false, minWasEmpty:true, lpDirty:false, minDirty:false
+};
+
+function toNum(r) { const v=parseFloat(r); return isNaN(v)?0:v; }
+function fmtE(p)  { return p>0 ? 'Earnings: $'+(p*FEE).toFixed(2) : 'Earnings: $--'; }
+function sugg(lp) { return Math.max(Math.round(lp*RATIO), MIN_FLOOR); }
+function lpOk(lp) { return lp>=MIN_FLOOR; }
+
+function openSheet() {
+  document.getElementById('sliding-layer').classList.remove('collapsed');
+  document.getElementById('bg-dim').classList.add('visible');
+  document.getElementById('saved-banner').classList.remove('visible');
+}
+
+function closeSheet() {
+  document.getElementById('sliding-layer').classList.add('collapsed');
+  document.getElementById('bg-dim').classList.remove('visible');
+}
+
+function render() {
+  const lp=toNum(state.lpRaw), min=toNum(state.minRaw), sg=lp>0?sugg(lp):0;
+
+  document.getElementById('lp-input').value  = state.lpRaw  ? '$'+state.lpRaw  : '';
+  document.getElementById('min-input').value = state.minRaw ? '$'+state.minRaw : '';
+
+  const minInput = document.getElementById('min-input');
+  minInput.placeholder = (sg>0 && lpOk(lp) && !state.minRaw) ? 'Suggested: $'+sg : '';
+
+  document.getElementById('lp-earnings').textContent  = fmtE(lp);
+  document.getElementById('min-earnings').textContent = fmtE(min);
+  document.getElementById('toggle').className = 'toggle-switch'+(state.ssOn?'':' off');
+  document.getElementById('min-section').style.display = state.ssOn?'block':'none';
+
+  const lpErr=document.getElementById('lp-error'), minErr=document.getElementById('min-error');
+  const lpF=document.getElementById('lp-field'),   minF=document.getElementById('min-field');
+  lpErr.textContent=''; minErr.textContent='';
+  lpF.className='field-row'; minF.className='field-row';
+  minInput.disabled=false; minF.style.opacity='1';
+
+  let bad=false;
+  if (state.ssOn) {
+    if (!state.lpRaw||lp===0) {
+      minInput.disabled=true; minF.style.opacity='0.4';
+      if (state.minDirty) minErr.textContent='Enter a listing price to continue';
+      bad=true;
+    } else if (!lpOk(lp)) {
+      if (state.lpDirty) { lpErr.textContent='Item must have a minimum price of $3 to be available for sale'; lpF.className='field-row error'; }
+      if (!state.minTouched) state.minRaw='';
+      bad=true;
+    } else {
+      if (!state.minRaw||min===0) {
+        if (state.minDirty) minErr.textContent='Enter your lowest acceptable price to continue';
+        bad=true;
+      } else if (min>=lp) {
+        if (state.minDirty) { minErr.textContent='Minimum price must be less than listing price'; minF.className='field-row error'; }
+        bad=true;
+      } else if (min<MIN_FLOOR) {
+        if (state.minDirty) { minErr.textContent='Enter a minimum price of at least $3 to continue'; minF.className='field-row error'; }
+        bad=true;
+      }
+    }
+  }
+  document.getElementById('done-btn').disabled=bad;
+}
+
+function maybeAutoFill(lp) {
+  if (!state.minWasEmpty||state.minTouched) return;
+  state.minRaw = lpOk(lp) ? String(sugg(lp)) : '';
+}
+
+function onLPInput(v)  { state.lpRaw=v.replace(/[^0-9]/g,''); state.lpDirty=true; state.activeField='lp'; maybeAutoFill(toNum(state.lpRaw)); render(); }
+function onMinFocus()  { state.activeField='min'; state.minTouched=true; state.minDirty=true; }
+function onMinInput(v) { state.minRaw=v.replace(/[^0-9]/g,''); state.minTouched=true; state.minDirty=true; state.activeField='min'; render(); }
+function onToggle() { state.ssOn=!state.ssOn; if (state.ssOn) maybeAutoFill(toNum(state.lpRaw)); render(); }
+
+function pressKey(k) {
+  const isMin=state.activeField==='min', field=isMin?'minRaw':'lpRaw';
+  if (k==='del') { state[field]=state[field].slice(0,-1); }
+  else { if(state[field].length<5) state[field]+=k; }
+  if (isMin) { state.minTouched=true; state.minDirty=true; }
+  else { state.lpDirty=true; maybeAutoFill(toNum(state.lpRaw)); }
+  render();
+}
+
+function onDone() {
+  const lp=toNum(state.lpRaw), min=toNum(state.minRaw);
+  // slide sheet down
+  closeSheet();
+  // show saved banner
+  const banner = document.getElementById('saved-banner');
+  const savedText = document.getElementById('saved-text');
+  savedText.textContent = 'Price: $'+lp + (state.ssOn ? '  ·  Min: $'+min : '');
+  setTimeout(() => banner.classList.add('visible'), 100);
+}
+
+// ── scenario presets ──
+const caseInfos = {
+  new_listing:  'New listing: both fields empty. Type LP — min auto-fills at 60%. Hit Done to see the sheet collapse.',
+  edit_lp_only: 'Edit flow: min was already saved ($24). Changing LP does not touch min.',
+  min_touched:  'User typed into min this session — LP changes no longer affect min.',
+  min_cleared:  'Min was cleared — suggested price shows as placeholder only, no auto-commit.',
+  lp_too_low:   'LP < $3 — min clears silently, LP error shows.',
+  min_too_high: 'Min ≥ LP — inline error, Done disabled.',
+  ss_toggle_on:  'Smart Sell was OFF when user entered (min is empty). Tap the toggle ON — min auto-fills at 60% of LP.'
+};
+const caseStates = {
+  new_listing:  {lpRaw:'',   minRaw:'',   ssOn:true, activeField:'lp',  minTouched:false, minWasEmpty:true,  lpDirty:false, minDirty:false},
+  edit_lp_only: {lpRaw:'40', minRaw:'24', ssOn:true, activeField:'lp',  minTouched:false, minWasEmpty:false, lpDirty:false, minDirty:false},
+  min_touched:  {lpRaw:'40', minRaw:'20', ssOn:true, activeField:'min', minTouched:true,  minWasEmpty:true,  lpDirty:true,  minDirty:true },
+  min_cleared:  {lpRaw:'40', minRaw:'',   ssOn:true, activeField:'min', minTouched:true,  minWasEmpty:true,  lpDirty:true,  minDirty:true },
+  lp_too_low:   {lpRaw:'2',  minRaw:'',   ssOn:true, activeField:'lp',  minTouched:false, minWasEmpty:true,  lpDirty:true,  minDirty:false},
+  min_too_high: {lpRaw:'40', minRaw:'50', ssOn:true, activeField:'min', minTouched:true,  minWasEmpty:true,  lpDirty:true,  minDirty:true },
+  ss_toggle_on: {lpRaw:'40', minRaw:'',   ssOn:false, activeField:'lp', minTouched:false, minWasEmpty:true,  lpDirty:true,  minDirty:false}
+};
+
+function setCase(c, el) {
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('info-box').textContent = caseInfos[c];
+  state = Object.assign({}, caseStates[c]);
+  // reset sheet to open state
+  openSheet();
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
