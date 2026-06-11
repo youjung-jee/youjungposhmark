@@ -211,7 +211,7 @@ let state = {
 };
 
 function toNum(r) { const v=parseFloat(r); return isNaN(v)?0:v; }
-function fmtE(p)  { return p>0 ? 'Earnings: $'+(p*FEE).toFixed(2) : 'Earnings: $--'; }
+function fmtE(p)  { return p>0 ? 'Earnings: $'+(p*FEE).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : 'Earnings: $--'; }
 function sugg(lp) { return Math.max(Math.round(lp*RATIO), MIN_FLOOR); }
 function lpOk(lp) { return lp>=MIN_FLOOR; }
 
@@ -229,8 +229,8 @@ function closeSheet() {
 function render() {
   const lp=toNum(state.lpRaw), min=toNum(state.minRaw), sg=lp>0?sugg(lp):0;
 
-  document.getElementById('lp-input').value  = state.lpRaw  ? '$'+state.lpRaw  : '';
-  document.getElementById('min-input').value = state.minRaw ? '$'+state.minRaw : '';
+  document.getElementById('lp-input').value  = state.lpRaw  ? '$'+Number(state.lpRaw).toLocaleString('en-US') : '';
+  document.getElementById('min-input').value = state.minRaw ? '$'+Number(state.minRaw).toLocaleString('en-US') : '';
 
   const minInput = document.getElementById('min-input');
   minInput.placeholder = (sg>0 && lpOk(lp) && !state.minRaw) ? 'Suggested: $'+sg : '';
