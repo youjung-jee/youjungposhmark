@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tastemaker Studio — Editor Prototype</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #F7F7F5;
+    --surface: #FFFFFF;
+    --surface-2: #F2F2F0;
+    --border: rgba(0,0,0,.1);
+    --border-strong: rgba(0,0,0,.18);
+    --text: #1A1A18;
+    --text-2: #6B6B67;
+    --text-3: #A0A09C;
+    --accent: #2563EB;
+    --accent-bg: #EFF4FF;
+    --accent-text: #1D4ED8;
+    --success: #16A34A;
+    --success-bg: #F0FDF4;
+    --success-text: #15803D;
+    --warning-bg: #FFFBEB;
+    --warning-text: #B45309;
+    --warning-border: rgba(180,83,9,.2);
+    --danger: #DC2626;
+    --danger-bg: #FEF2F2;
+    --danger-text: #B91C1C;
+    --danger-border: rgba(220,38,38,.2);
+    --radius: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 32px 16px 64px; min-height: 100vh; }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 420px; }
+  .stage-label { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--text-3); }
+  .nav-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .nav-pill { padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); transition: all .15s; user-select: none; }
+  .nav-pill:hover { background: var(--surface-2); }
+  .nav-pill.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  /* phone frame */
+  .phone { width: 375px; background: var(--surface); border-radius: 40px; border: 1px solid var(--border); overflow: hidden; position: relative; }
+  .screen { display: none; flex-direction: column; min-height: 760px; }
+  .screen.active { display: flex; }
+
+  /* status bar */
+  .sbar { padding: 14px 22px 6px; display: flex; justify-content: space-between; align-items: center; background: var(--surface); }
+  .sbar-time { font-size: 14px; font-weight: 600; color: var(--text); }
+  .sbar-icons { display: flex; gap: 5px; }
+  .sbar-icons i { font-size: 15px; color: var(--text); }
+
+  /* nav bar */
+  .nbar { padding: 6px 16px 12px; display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--border); position: relative; }
+  .nbar-title { font-size: 16px; font-weight: 600; color: var(--text); position: absolute; left: 50%; transform: translateX(-50%); }
+  .nbar-back { display: flex; align-items: center; gap: 2px; font-size: 15px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 4px 0; font-family: inherit; }
+  .nbar-back i { font-size: 20px; }
+  .nbar-btn { padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .nbar-btn-ghost { background: transparent; border: 1px solid var(--border-strong); color: var(--text); }
+  .nbar-btn-accent { background: var(--accent); color: #fff; }
+  .nbar-btn:active { opacity: .8; transform: scale(.97); }
+
+  /* body */
+  .body { flex: 1; overflow-y: auto; background: var(--bg); }
+
+  /* sections */
+  .sec { padding: 16px; }
+  .sec-label { font-size: 11px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--text-3); margin-bottom: 10px; }
+
+  /* cards */
+  .card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; margin-bottom: 10px; }
+  .card-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; transition: background .12s; }
+  .card-row:active { background: var(--surface-2); }
+  .card-row + .card-row { border-top: 1px solid var(--border); }
+  .card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .card-icon i { font-size: 20px; }
+  .card-body { flex: 1; }
+  .card-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .card-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .card-chev i { font-size: 16px; color: var(--text-3); }
+
+  /* theme list */
+  .theme-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden; }
+  .theme-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; }
+  .theme-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .theme-info { flex: 1; }
+  .theme-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .theme-count { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+  .theme-acts { display: flex; gap: 6px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .12s; }
+  .icon-btn:active { background: var(--surface-2); }
+  .icon-btn i { font-size: 16px; color: var(--text-2); }
+  .icon-btn.danger i { color: var(--danger); }
+  .thumb-strip { display: flex; gap: 7px; padding: 0 16px 14px; overflow-x: auto; }
+  .thumb { width: 58px; height: 58px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+  .thumb i { font-size: 20px; color: rgba(255,255,255,.55); }
+  .thumb-vbadge { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,.5); border-radius: 4px; padding: 2px 5px; display: flex; align-items: center; gap: 2px; }
+  .thumb-vbadge i { font-size: 9px; color: #fff; }
+  .add-thumb { width: 58px; height: 58px; border-radius: 10px; border: 1.5px dashed var(--border-strong); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .12s; }
+  .add-thumb:active { background: var(--surface-2); }
+  .add-thumb i { font-size: 22px; color: var(--text-3); }
+
+  /* input */
+  .input { width: 100%; padding: 13px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); font-size: 15px; color: var(--text); font-family: inherit; outline: none; transition: border-color .15s; }
+  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+
+  /* chips */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip { padding: 7px 14px; border-radius: 20px; font-size: 13px; border: 1px solid var(--border-strong); color: var(--text-2); cursor: pointer; background: var(--surface); transition: all .15s; user-select: none; }
+  .chip:active { transform: scale(.96); }
+  .chip.sel { background: var(--accent-bg); color: var(--accent-text); border-color: rgba(37,99,235,.3); font-weight: 500; }
+
+  /* tabs */
+  .tab-bar { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; padding: 13px 8px; text-align: center; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text-3); border-bottom: 2px solid transparent; transition: all .15s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* content rows */
+  .content-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; background: var(--surface); transition: background .12s; }
+  .content-row:active { background: var(--surface-2); }
+  .content-thumb { width: 54px; height: 54px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .content-thumb i { font-size: 22px; color: rgba(255,255,255,.5); }
+  .content-info { flex: 1; }
+  .content-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .content-meta { font-size: 12px; color: var(--text-3); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+  .pill { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .pill-ok { background: var(--success-bg); color: var(--success-text); }
+  .pill-pending { background: var(--warning-bg); color: var(--warning-text); }
+
+  /* grid 2 */
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  .pick-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; transition: transform .12s; }
+  .pick-item:active { transform: scale(.96); }
+  .pick-fill { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .pick-fill i { font-size: 26px; color: rgba(255,255,255,.5); }
+  .pick-ring { position: absolute; inset: 0; border: 2.5px solid var(--accent); border-radius: 12px; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .pick-item.sel .pick-ring { opacity: 1; }
+  .pick-check { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); display: none; align-items: center; justify-content: center; }
+  .pick-check i { font-size: 13px; color: #fff; }
+  .pick-item.sel .pick-check { display: flex; }
+  .own-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.55); border-radius: 6px; padding: 2px 7px; font-size: 10px; font-weight: 600; color: #fff; }
+
+  /* upload drop zone */
+  .drop-zone { margin: 16px; border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 44px 20px; text-align: center; cursor: pointer; transition: all .2s; background: var(--surface); }
+  .drop-zone:hover, .drop-zone:active { border-color: var(--accent); background: var(--accent-bg); }
+  .drop-zone i { font-size: 44px; color: var(--text-3); display: block; margin-bottom: 12px; }
+  .drop-zone-title { font-size: 15px; font-weight: 500; color: var(--text-2); }
+  .drop-zone-sub { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+
+  /* info banners */
+  .banner { display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--radius); margin-bottom: 12px; }
+  .banner i { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .banner-text { font-size: 13px; line-height: 1.5; }
+  .banner-success { background: var(--success-bg); border: 1px solid rgba(22,163,74,.2); }
+  .banner-success i, .banner-success .banner-text { color: var(--success-text); }
+  .banner-warn { background: var(--warning-bg); border: 1px solid var(--warning-border); }
+  .banner-warn i, .banner-warn .banner-text { color: var(--warning-text); }
+
+  /* sheet overlay */
+  .sheet-bg { position: absolute; inset: 0; background: rgba(0,0,0,.38); display: flex; flex-direction: column; justify-content: flex-end; z-index: 20; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .sheet-bg.open { opacity: 1; pointer-events: all; }
+  .sheet { background: var(--surface); border-radius: 22px 22px 0 0; padding: 0 0 40px; transform: translateY(100%); transition: transform .32s cubic-bezier(.32,.72,0,1); }
+  .sheet-bg.open .sheet { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 12px auto 18px; }
+  .sheet-title { font-size: 16px; font-weight: 600; color: var(--text); padding: 0 20px 14px; border-bottom: 1px solid var(--border); }
+  .sheet-opt { display: flex; align-items: center; gap: 14px; padding: 16px 20px; cursor: pointer; transition: background .12s; }
+  .sheet-opt:active { background: var(--surface-2); }
+  .sheet-opt i { font-size: 22px; color: var(--text-2); }
+  .sheet-opt-label { font-size: 15px; color: var(--text); }
+  .sheet-opt-sub { font-size: 12px; color: var(--text-3); }
+  .del-sheet { background: var(--surface); border-radius: 22px 22px 0 0; padding: 24px 20px 44px; transform: translateY(100%); transition: transform .32s cubic-bezier(.32,.72,0,1); }
+  .sheet-bg.open .del-sheet { transform: translateY(0); }
+
+  /* buttons */
+  .btn-full { width: 100%; padding: 15px; border-radius: var(--radius-lg); font-size: 15px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all .15s; }
+  .btn-full:active { transform: scale(.98); opacity: .9; }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border-strong); color: var(--text); }
+  .btn-danger { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+
+  /* toast */
+  .toast { position: absolute; bottom: 100px; left: 16px; right: 16px; background: #1A1A18; border-radius: 12px; padding: 13px 16px; font-size: 13px; color: #fff; display: flex; align-items: center; gap: 10px; transform: translateY(16px); opacity: 0; transition: all .25s; z-index: 40; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast i { color: #4ADE80; font-size: 17px; }
+
+  /* bottom nav */
+  .bnav { display: flex; border-top: 1px solid var(--border); background: var(--surface); }
+  .bnav-item { flex: 1; padding: 10px 8px 16px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .bnav-item i { font-size: 24px; color: var(--text-3); }
+  .bnav-item span { font-size: 10px; font-weight: 500; color: var(--text-3); }
+  .bnav-item.active i, .bnav-item.active span { color: var(--accent); }
+
+  /* photo preview grid */
+  .photo-pre { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .photo-pre i { font-size: 24px; color: rgba(255,255,255,.5); }
+
+  /* sel count badge */
+  .sel-count { font-size: 13px; font-weight: 600; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="stage-label">Tastemaker Studio — Editor Prototype</div>
+
+  <div class="nav-row">
+    <div class="nav-pill active" onclick="navTo('s-gallery',this)">Gallery</div>
+    <div class="nav-pill" onclick="navTo('s-new-theme-entry',this)">+ New theme</div>
+    <div class="nav-pill" onclick="openTheme(0);navTo('s-theme-detail',this)">Theme detail</div>
+    <div class="nav-pill" onclick="navTo('s-collection',this)">Collection picker</div>
+  </div>
+
+  <div class="phone" id="phone">
+
+    <!-- SCREEN: Gallery home -->
+    <div class="screen active" id="s-gallery">
+      <div class="sbar"><span class="sbar-time">9:41</span><div class="sbar-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery"></i></div></div>
+      <div class="nbar">
+        <div style="width:60px"></div>
+        <div class="nbar-title">My gallery</div>
+        <button class="nbar-btn nbar-btn-accent" onclick="go('s-new-theme-entry')">+ Theme</button>
+      </div>
+      <div class="body" style="padding:12px 16px 80px">
+        <div id="theme-list"></div>
+      </div>
+      <div class="bnav">
+        <div class="bnav-item active"><i class="ti ti-layout-grid"></i><span>Gallery</span></div>
+        <div class="bnav-item"><i class="ti ti-chart-bar"></i><span>Stats</span></div>
+        <div class="bnav-item"><i class="ti ti-link"></i><span>My link</span></div>
+        <div class="bnav-item"><i class="ti ti-user"></i><span>Profile</span></div>
+      </div>
+      <!-- delete theme sheet -->
+      <div class="sheet-bg" id="del-theme-sheet">
+        <div class="del-sheet">
+          <div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px">Remove theme?</div>
+          <div style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:20px">The theme label is removed, but all photos and videos inside it stay in your gallery. You can reassign or delete them individually.</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-full btn-danger" onclick="confirmDelTheme()">Remove theme</button>
+            <button class="btn-full btn-ghost" onclick="closeSheet('del-theme-sheet')">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="toast" id="gallery-toast"><i class="ti ti-circle-check"></i><span id="gallery-toast-msg"></span></div>
+    </div>
+
+    <!-- SCREEN: New theme entry -->
+    <div class="screen" id="s-new-theme-entry">
+      <div class="sbar"><span class="sbar-time">9:41</span><div class="sbar-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery"></i></div></div>
+      <div class="nbar">
+        <button class="nbar-back" onclick="go('s-gallery')"><i class="ti ti-chevron-left"></i>Gallery</button>
+        <div class="nbar-title">New theme</div>
+        <div style="width:60px"></div>
+      </div>
+      <div class="body">
+        <div class="sec">
+          <div class="sec-label">Theme name</div>
+          <input class="input" id="new-theme-name" placeholder="e.g. Summer in the city" style="margin-bottom:20px">
+          <div class="sec-label">Add content</div>
+          <div class="card">
+            <div class="card-row" onclick="go('s-upload-photo')">
+              <div class="card-icon" style="background:#EFF4FF"><i class="ti ti-photo" style="color:#2563EB"></i></div>
+              <div class="card-body"><div class="card-title">Upload photo</div><div class="card-sub">JPG, PNG, WEBP from camera roll</div></div>
+              <div class="card-chev"><i class="ti ti-chevron-right"></i></div>
+            </div>
+            <div class="card-row" onclick="go('s-upload-video')">
+              <div class="card-icon" style="background:#F5F3FF"><i class="ti ti-video" style="color:#7C3AED"></i></div>
+              <div class="card-body"><div class="card-title">Upload video</div><div class="card-sub">MP4, MOV · up to 60 seconds</div></div>
+              <div class="card-chev"><i class="ti ti-chevron-right"></i></div>
+            </div>
+            <div class="card-row" onclick="go('s-collection')">
+              <div class="card-icon" style="background:#F0FDF4"><i class="ti ti-heart" style="color:#16A34A"></i></div>
+              <div class="card-body"><div class="card-title">Create collection</div><div class="card-sub">Pick liked or your own listings</div></div>
+              <div class="card-chev"><i class="ti ti-chevron-right"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:12px 16px 40px">
+        <button class="btn-full btn-accent" onclick="createTheme()">Create theme</button>
+      </div>
+    </div>
+
+    <!-- SCREEN: Theme detail -->
+    <div class="screen" id="s-theme-detail">
+      <div class="sbar"><span class="sbar-time">9:41</span><div class="sbar-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery"></i></div></div>
+      <div class="nbar">
+        <button class="nbar-back" onclick="go('s-gallery')"><i class="ti ti-chevron-left"></i>Gallery</button>
+        <div class="nbar-title" id="detail-theme-name">Summer theme</div>
+        <button class="nbar-btn nbar-btn-ghost" onclick="openSheet('add-sheet')">Add</button>
+      </div>
+      <div class="body" id="detail-list" style="padding-bottom:32px"></div>
+      <!-- add sheet -->
+      <div class="sheet-bg" id="add-sheet">
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">Add to this theme</div>
+          <div class="sheet-opt" onclick="closeSheet('add-sheet');go('s-upload-photo')">
+            <i class="ti ti-photo"></i>
+            <div><div class="sheet-opt-label">Upload photo</div><div class="sheet-opt-sub">From camera roll</div></div>
+          </div>
+          <div class="sheet-opt" onclick="closeSheet('add-sheet');go('s-upload-video')">
+            <i class="ti ti-video"></i>
+            <div><div class="sheet-opt-label">Upload video</div><div class="sheet-opt-sub">MP4 or MOV, up to 60s</div></div>
+          </div>
+          <div class="sheet-opt" onclick="closeSheet('add-sheet');go('s-collection')">
+            <i class="ti ti-heart"></i>
+            <div><div class="sheet-opt-label">Create collection</div><div class="sheet-opt-sub">Pick liked or your own listings</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- delete item sheet -->
+      <div class="sheet-bg" id="del-item-sheet">
+        <div class="del-sheet">
+          <div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px">Delete this item?</div>
+          <div style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:20px">This removes the content and all AI-matched listings from your gallery. This can't be undone.</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-full btn-danger" onclick="confirmDelItem()">Delete item</button>
+            <button class="btn-full btn-ghost" onclick="closeSheet('del-item-sheet')">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="toast" id="detail-toast"><i class="ti ti-circle-check"></i><span id="detail-toast-msg"></span></div>
+    </div>
+
+    <!-- SCREEN: Upload photo -->
+    <div class="screen" id="s-upload-photo">
+      <div class="sbar"><span class="sbar-time">9:41</span><div class="sbar-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery"></i></div></div>
+      <div class="nbar">
+        <button class="nbar-back" onclick="goBack()"><i class="ti ti-chevron-left"></i>Back</button>
+        <div class="nbar-title">Upload photo</div>
+        <div style="width:60px"></div>
+      </div>
+      <div class="body">
+        <div class="drop-zone" id="photo-drop" onclick="simulatePhotoUpload()">
+          <i class="ti ti-photo-up"></i>
+          <div class="drop-zone-title">Tap to select photos</div>
+          <div class="drop-zone-sub">JPG, PNG, WEBP</div>
+        </div>
+        <div id="photo-after" style="display:none;padding:0 16px">
+          <div class="sec-label" style="margin-bottom:10px">Selected (3)</div>
+          <div class="grid2" id="photo-thumbs" style="margin-bottom:18px"></div>
+          <div class="sec-label" style="margin-bottom:10px">Add to theme</div>
+          <div class="chip-row" id="photo-chips"></div>
+        </div>
+      </div>
+      <div style="padding:12px 16px 40px">
+        <button class="btn-full btn-accent" onclick="savePhoto()">Add to gallery</button>
+      </div>
+    </div>
+
+    <!-- SCREEN: Upload video -->
+    <div class="screen" id="s-upload-video">
+      <div class="sbar"><span class="sbar-time">9:41</span><div class="sbar-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery"></i></div></div>
+      <div class="nbar">
+        <button class="nbar-back" onclick="goBack()"><i class="ti ti-chevron-left"></i>Back</button>
+        <div class="nbar-title">Upload video</div>
+        <div style="width:60px"></div>
+      </div>
+      <div class="body">
+        <div class="drop-zone" id="video-drop" onclick="simulateVideoUpload()">
+          <i class="ti ti-video-plus"></i>
+          <div class="drop-zone-title">Tap to select video</div>
+          <div class="drop-zone-sub">MP4 or MOV · max 60 seconds</div>
+        </div>
+        <div id="video-after" style="display:none;padding:0 16px">
+          <div style="background:#1A1A18;border-radius:14px;aspect-ratio:9/16;max-height:200px;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+            <i class="ti ti-player-play" style="font-size:40px;color:rgba(255,255,255,.4)"></i>
+          </div>
+          <div class="banner banner-success" style="margin-bottom:16px">
+            <i class="ti ti-sparkles"></i>
+            <div class="banner-text">AI will scan for fashion items automatically — no tagging needed.</div>
+          </div>
+          <div class="sec-label" style="margin-bottom:10px">Add to theme</div>
+          <div class="chip-row" id="video-chips"></div>
+        </div>
+      </div>
+      <div style="padding:12px 16px 40px">
+        <button class="btn-full btn-accent" onclick="saveVideo()">Add to gallery</button>
+      </div>
+    </div>
+
+    <!-- SCREEN: Collection picker -->
+    <div class="screen" id="s-collection">
+      <div class="sbar"><span class="sbar-time">9:41</span><div class="sbar-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery"></i></div></div>
+      <div class="nbar">
+        <button class="nbar-back" onclick="goBack()"><i class="ti ti-chevron-left"></i>Back</button>
+        <div class="nbar-title">Create collection</div>
+        <span class="sel-count" id="coll-count">0 selected</span>
+      </div>
+      <div class="tab-bar">
+        <div class="tab active" id="tab-liked" onclick="switchTab('liked')">Liked listings</div>
+        <div class="tab" id="tab-mine" onclick="switchTab('mine')">My listings</div>
+      </div>
+      <div class="body">
+        <div style="padding:14px 16px 10px">
+          <div class="sec-label" style="margin-bottom:8px">Add to theme</div>
+          <div class="chip-row" id="coll-chips"></div>
+        </div>
+        <div style="padding:0 16px 24px" id="coll-grid"></div>
+      </div>
+      <div style="padding:12px 16px 40px">
+        <button class="btn-full btn-accent" onclick="saveCollection()">Add to gallery</button>
+      </div>
+    </div>
+
+    <!-- SCREEN: Item edit -->
+    <div class="screen" id="s-item-edit">
+      <div class="sbar"><span class="sbar-time">9:41</span><div class="sbar-icons"><i class="ti ti-wifi"></i><i class="ti ti-battery"></i></div></div>
+      <div class="nbar">
+        <button class="nbar-back" onclick="go('s-theme-detail')"><i class="ti ti-chevron-left"></i>Back</button>
+        <div class="nbar-title">Edit item</div>
+        <button class="nbar-btn nbar-btn-accent" onclick="saveItemEdit()">Save</button>
+      </div>
+      <div class="body">
+        <div id="item-edit-hero" style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center"></div>
+        <div class="sec">
+          <div class="sec-label" style="margin-bottom:8px">Title</div>
+          <input class="input" id="item-edit-title" placeholder="Add a title" style="margin-bottom:18px">
+          <div class="sec-label" style="margin-bottom:8px">Theme</div>
+          <div class="chip-row" id="item-edit-chips" style="margin-bottom:18px"></div>
+          <div class="sec-label" style="margin-bottom:8px">AI-matched listings</div>
+          <div id="item-edit-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px"></div>
+          <div style="height:1px;background:var(--border);margin-bottom:18px"></div>
+          <button class="btn-full btn-danger" onclick="openSheet('item-del-sheet')">Delete item</button>
+        </div>
+      </div>
+      <div class="sheet-bg" id="item-del-sheet">
+        <div class="del-sheet">
+          <div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px">Delete this item?</div>
+          <div style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:20px">This removes the content and all AI-matched listings from your gallery. This can't be undone.</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-full btn-danger" onclick="confirmItemDelete()">Delete item</button>
+            <button class="btn-full btn-ghost" onclick="closeSheet('item-del-sheet')">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="toast" id="edit-toast"><i class="ti ti-circle-check"></i><span id="edit-toast-msg"></span></div>
+    </div>
+
+  </div><!-- /phone -->
+
+</div><!-- /stage -->
+
+<script>
+const COLORS = ['#C4A882','#A8B4C4','#B8C4A8','#C4A8B8','#A8C0C4','#C4BAA8','#B0A8C4','#C4C4A8'];
+const TAGS = [['Farm Rio dress','Linen blouse'],['Maxi skirt','Straw tote'],['Linen set','Sun hat'],['Vintage blazer','Wide jeans'],['Silk top','Midi skirt']];
+
+let themes = [
+  {id:0,name:'Summer theme',color:COLORS[0],items:[
+    {id:10,type:'photo',color:COLORS[0],title:'Beach haul',tags:TAGS[0],matched:true},
+    {id:11,type:'video',color:COLORS[2],title:'GRWM reel',tags:TAGS[1],matched:true},
+    {id:12,type:'collection',color:COLORS[4],title:'My picks',tags:TAGS[2],matched:true}
+  ]},
+  {id:1,name:'Totally tropical',color:COLORS[1],items:[
+    {id:20,type:'photo',color:COLORS[1],title:'',tags:TAGS[3],matched:false},
+    {id:21,type:'video',color:COLORS[3],title:'Thrift haul',tags:TAGS[4],matched:true}
+  ]},
+  {id:2,name:'NYC street style',color:COLORS[5],items:[
+    {id:30,type:'photo',color:COLORS[5],title:'',tags:TAGS[0],matched:true}
+  ]}
+];
+
+let activeThemeId = 0;
+let activeItemId = null;
+let prevScreen = 's-gallery';
+let delThemeId = null;
+let delItemId = null;
+let collTab = 'liked';
+let collSel = new Set();
+let toastTimers = {};
+
+function navTo(id, el) {
+  document.querySelectorAll('.nav-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  go(id);
+}
+
+function go(id) {
+  const cur = document.querySelector('.screen.active');
+  if (cur && cur.id !== id) prevScreen = cur.id;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 's-gallery') renderGallery();
+  if (id === 's-theme-detail') renderThemeDetail();
+  if (id === 's-collection') { collSel = new Set(); renderChips('coll-chips'); renderCollGrid(); updateCollCount(); }
+  if (id === 's-upload-photo') { document.getElementById('photo-after').style.display='none'; renderChips('photo-chips'); }
+  if (id === 's-upload-video') { document.getElementById('video-after').style.display='none'; document.getElementById('video-drop').style.display='block'; renderChips('video-chips'); }
+}
+
+function goBack() { go(prevScreen); }
+
+function openTheme(id) { activeThemeId = id; go('s-theme-detail'); }
+function openSheet(id) { document.getElementById(id).classList.add('open'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+
+function renderGallery() {
+  const list = document.getElementById('theme-list');
+  list.innerHTML = '';
+  if (!themes.length) {
+    list.innerHTML = '<div style="text-align:center;padding:60px 20px"><i class="ti ti-layout-grid" style="font-size:40px;color:var(--text-3);display:block;margin-bottom:12px"></i><div style="font-size:15px;color:var(--text-2);font-weight:500">No themes yet</div><div style="font-size:13px;color:var(--text-3);margin-top:4px">Tap "+ Theme" to create your first.</div></div>';
+    return;
+  }
+  themes.forEach(th => {
+    const d = document.createElement('div');
+    d.className = 'theme-item';
+    const strip = th.items.slice(0,3).map(it =>
+      `<div class="thumb" style="background:${it.color}" onclick="openTheme(${th.id})">
+        <i class="ti ti-${it.type==='video'?'video':it.type==='collection'?'heart':'photo'}"></i>
+        ${it.type==='video'?'<div class="thumb-vbadge"><i class="ti ti-player-play"></i></div>':''}
+       </div>`
+    ).join('');
+    d.innerHTML = `
+      <div class="theme-header" onclick="openTheme(${th.id})">
+        <div class="theme-dot" style="background:${th.color}"></div>
+        <div class="theme-info">
+          <div class="theme-name">${th.name}</div>
+          <div class="theme-count">${th.items.length} item${th.items.length!==1?'s':''}</div>
+        </div>
+        <div class="theme-acts">
+          <div class="icon-btn danger" onclick="event.stopPropagation();askDelTheme(${th.id})"><i class="ti ti-trash"></i></div>
+          <div class="icon-btn" onclick="event.stopPropagation();openTheme(${th.id})"><i class="ti ti-chevron-right"></i></div>
+        </div>
+      </div>
+      <div class="thumb-strip">${strip}<div class="add-thumb" onclick="openTheme(${th.id})"><i class="ti ti-plus"></i></div></div>
+    `;
+    list.appendChild(d);
+  });
+}
+
+function renderThemeDetail() {
+  const th = themes.find(t => t.id === activeThemeId);
+  if (!th) return;
+  document.getElementById('detail-theme-name').textContent = th.name;
+  const list = document.getElementById('detail-list');
+  list.innerHTML = '';
+  if (!th.items.length) {
+    list.innerHTML = '<div style="text-align:center;padding:48px 20px"><i class="ti ti-photo" style="font-size:36px;color:var(--text-3);display:block;margin-bottom:10px"></i><div style="font-size:14px;color:var(--text-2)">No content yet — tap Add to get started.</div></div>';
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.style.background = 'var(--surface)';
+  th.items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'content-row';
+    row.innerHTML = `
+      <div class="content-thumb" style="background:${item.color}"><i class="ti ti-${item.type==='video'?'video':item.type==='collection'?'heart':'photo'}"></i></div>
+      <div class="content-info">
+        <div class="content-title">${item.title||'Untitled'}</div>
+        <div class="content-meta">
+          <span style="text-transform:capitalize">${item.type}</span>
+          <span style="color:var(--border-strong)">·</span>
+          <span class="pill ${item.matched?'pill-ok':'pill-pending'}">${item.matched?item.tags[0]:'Analyzing…'}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <div class="icon-btn" onclick="openItemEdit(${item.id})"><i class="ti ti-edit"></i></div>
+        <div class="icon-btn danger" onclick="askDelItem(${item.id})"><i class="ti ti-trash"></i></div>
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+  list.appendChild(wrap);
+}
+
+function renderChips(containerId, selName) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  const sel = selName || (themes[0]&&themes[0].name) || '';
+  c.innerHTML = themes.map(th =>
+    `<div class="chip${th.name===sel?' sel':''}" onclick="selectChip(this,'${containerId}')">${th.name}</div>`
+  ).join('');
+}
+
+function selectChip(el, cid) {
+  document.querySelectorAll('#'+cid+' .chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function getSelTheme(chipsId) {
+  const sel = document.querySelector('#'+chipsId+' .chip.sel');
+  if (sel) return themes.find(t => t.name === sel.textContent);
+  return themes.find(t => t.id === activeThemeId) || themes[0];
+}
+
+function askDelTheme(id) { delThemeId = id; openSheet('del-theme-sheet'); }
+function confirmDelTheme() {
+  if (delThemeId === null) return;
+  themes = themes.filter(t => t.id !== delThemeId);
+  closeSheet('del-theme-sheet');
+  delThemeId = null;
+  renderGallery();
+  showToast('gallery-toast', 'Theme removed — content stays in gallery');
+}
+
+function askDelItem(id) { delItemId = id; openSheet('del-item-sheet'); }
+function confirmDelItem() {
+  if (delItemId === null) return;
+  const th = themes.find(t => t.id === activeThemeId);
+  if (th) th.items = th.items.filter(i => i.id !== delItemId);
+  closeSheet('del-item-sheet');
+  delItemId = null;
+  renderThemeDetail();
+  showToast('detail-toast', 'Item deleted');
+}
+
+function createTheme() {
+  const name = document.getElementById('new-theme-name').value.trim() || 'New theme';
+  const newTh = {id: Date.now(), name, color: COLORS[themes.length % COLORS.length], items: []};
+  themes.push(newTh);
+  activeThemeId = newTh.id;
+  document.getElementById('new-theme-name').value = '';
+  go('s-theme-detail');
+}
+
+function simulatePhotoUpload() {
+  const thumbs = document.getElementById('photo-thumbs');
+  thumbs.innerHTML = [0,1,2].map(i =>
+    `<div class="photo-pre" style="background:${COLORS[i]}"><i class="ti ti-photo"></i></div>`
+  ).join('');
+  renderChips('photo-chips');
+  document.getElementById('photo-after').style.display = 'block';
+}
+
+function savePhoto() {
+  const th = getSelTheme('photo-chips');
+  if (th) {
+    th.items.push({id:Date.now(),type:'photo',color:COLORS[th.items.length%COLORS.length],title:'',tags:TAGS[th.items.length%TAGS.length],matched:false});
+    activeThemeId = th.id;
+  }
+  go('s-theme-detail');
+  setTimeout(() => showToast('detail-toast', 'Photo added — matching items…'), 80);
+}
+
+function simulateVideoUpload() {
+  document.getElementById('video-drop').style.display = 'none';
+  renderChips('video-chips');
+  document.getElementById('video-after').style.display = 'block';
+}
+
+function saveVideo() {
+  const th = getSelTheme('video-chips');
+  if (th) {
+    th.items.push({id:Date.now(),type:'video',color:COLORS[th.items.length%COLORS.length],title:'',tags:TAGS[th.items.length%TAGS.length],matched:false});
+    activeThemeId = th.id;
+  }
+  go('s-theme-detail');
+  setTimeout(() => showToast('detail-toast', 'Video added — AI scanning in progress'), 80);
+}
+
+function switchTab(tab) {
+  collTab = tab;
+  document.getElementById('tab-liked').classList.toggle('active', tab==='liked');
+  document.getElementById('tab-mine').classList.toggle('active', tab==='mine');
+  collSel = new Set();
+  updateCollCount();
+  renderCollGrid();
+}
+
+function renderCollGrid() {
+  const g = document.getElementById('coll-grid');
+  g.innerHTML = '';
+  const isOwn = collTab === 'mine';
+  const count = isOwn ? 6 : 8;
+  const grid = document.createElement('div');
+  grid.className = 'grid2';
+  grid.style.gap = '8px';
+  for (let i = 0; i < count; i++) {
+    const key = collTab+'-'+i;
+    const d = document.createElement('div');
+    d.className = 'pick-item' + (collSel.has(key)?' sel':'');
+    d.innerHTML = `
+      <div class="pick-fill" style="background:${COLORS[i%COLORS.length]}"><i class="ti ti-shirt"></i></div>
+      ${isOwn?'<div class="own-badge">Yours</div>':''}
+      <div class="pick-ring"></div>
+      <div class="pick-check"><i class="ti ti-check"></i></div>
+    `;
+    d.onclick = () => {
+      if (collSel.has(key)) collSel.delete(key); else collSel.add(key);
+      d.classList.toggle('sel', collSel.has(key));
+      updateCollCount();
+    };
+    grid.appendChild(d);
+  }
+  g.appendChild(grid);
+}
+
+function updateCollCount() {
+  document.getElementById('coll-count').textContent = collSel.size + ' selected';
+}
+
+function saveCollection() {
+  const th = getSelTheme('coll-chips');
+  if (th && collSel.size > 0) {
+    th.items.push({id:Date.now(),type:'collection',color:COLORS[th.items.length%COLORS.length],title:`Collection (${collSel.size} items)`,tags:TAGS[th.items.length%TAGS.length],matched:true});
+    activeThemeId = th.id;
+  }
+  go('s-theme-detail');
+  setTimeout(() => showToast('detail-toast', collSel.size + ' listings added to collection'), 80);
+}
+
+function openItemEdit(id) {
+  const th = themes.find(t => t.id === activeThemeId);
+  const item = th && th.items.find(i => i.id === id);
+  if (!item) return;
+  activeItemId = id;
+  const hero = document.getElementById('item-edit-hero');
+  hero.style.background = item.color;
+  hero.innerHTML = `<i class="ti ti-${item.type==='video'?'video':item.type==='collection'?'heart':'photo'}" style="font-size:52px;color:rgba(255,255,255,.4)"></i>`;
+  document.getElementById('item-edit-title').value = item.title || '';
+  renderChips('item-edit-chips', item.theme || themes.find(t=>t.items.some(i=>i.id===id))?.name);
+  const tags = document.getElementById('item-edit-tags');
+  tags.innerHTML = item.tags.map(t =>
+    `<span class="pill ${item.matched?'pill-ok':'pill-pending'}">${t}</span>`
+  ).join('');
+  go('s-item-edit');
+}
+
+function saveItemEdit() {
+  const th = themes.find(t => t.id === activeThemeId);
+  const item = th && th.items.find(i => i.id === activeItemId);
+  if (item) item.title = document.getElementById('item-edit-title').value;
+  showToast('edit-toast', 'Changes saved');
+}
+
+function confirmItemDelete() {
+  const th = themes.find(t => t.id === activeThemeId);
+  if (th && activeItemId !== null) th.items = th.items.filter(i => i.id !== activeItemId);
+  closeSheet('item-del-sheet');
+  go('s-theme-detail');
+}
+
+function showToast(id, msg) {
+  clearTimeout(toastTimers[id]);
+  const t = document.getElementById(id);
+  if (!t) return;
+  t.querySelector('span').textContent = msg;
+  t.classList.add('show');
+  toastTimers[id] = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+renderGallery();
+</script>
+</body>
+</html>
